@@ -32,6 +32,7 @@
             </RMarkdownRenderProfile>
           </value>
         </entry>
+<<<<<<< HEAD
         <entry key="file://$PROJECT_DIR$/seance_4/III_AFD.Rmd">
           <value>
             <RMarkdownRenderProfile>
@@ -39,6 +40,8 @@
             </RMarkdownRenderProfile>
           </value>
         </entry>
+=======
+>>>>>>> 159e1ee36ed71f32d4c4263cb35ab13d08c3d2d3
       </map>
     </option>
   </component>

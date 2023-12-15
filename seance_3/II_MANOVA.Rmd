@@ -152,7 +152,11 @@ library(readr)
 -   **Seconde étape :**
 
 ```{r}
+<<<<<<< HEAD
 df_MANOVA <- read(file = "MANOVA_DATASET.Rda")
+=======
+load("MANOVA_DATASET.Rda")
+>>>>>>> 159e1ee36ed71f32d4c4263cb35ab13d08c3d2d3
 ```
 
 -   **Troisième étape :**
@@ -168,7 +172,6 @@ MANOVA_DATASET %>% kbl(digits=3) %>%
 
 ```{r,   warning = F}
 MANOVA_DATASET$Site <- as.factor(MANOVA_DATASET$Site)
-
 ```
 
 -   **Cinquième étape :**
@@ -339,6 +342,7 @@ Pour y parvenir nous devons :
 Au finale, la matrice (*SS_tot*) est la suivante :
 
 ```{r I_Tot}
+<<<<<<< HEAD
 # à compléter
 X <- t(as.matrix(X))
 G <- matrix(G)
@@ -359,6 +363,15 @@ dim(SS_TOT)   # 26 * 26
 ```
 
 ```         
+=======
+
+X <- as.matrix(X)
+G_matrix <- matrix(G, nrow = nrow(X), ncol = ncol(X), byrow = TRUE)
+
+diff <- X - G_matrix
+
+SS_tot <- diff_transpose %*% diff_matrix
+>>>>>>> 159e1ee36ed71f32d4c4263cb35ab13d08c3d2d3
 ```
 
 #### <FONT color='#0066CC'><FONT size = 4> 4.2 Inertie intra classe </FONT></FONT>
@@ -374,6 +387,7 @@ $$S{S_{{\text{k}}{\text{, intra}}}} = \sum\limits_{i = 1}^{{n_k}} {{d^2}({x_{i,j
 Les résultats sont les suivants:
 
 ```{r}
+<<<<<<< HEAD
 # à compléter
 # Diviser les données en groupes basés sur la colonne "Class"
 groups <- split(data[-6], data$Class)
@@ -393,6 +407,10 @@ SS_partiel_Intra <- lapply(dif_list, function(dif) {
 })
 
 SS_partiel_Intra
+=======
+
+c 
+>>>>>>> 159e1ee36ed71f32d4c4263cb35ab13d08c3d2d3
 ```
 
 <br>
@@ -403,9 +421,13 @@ Les K matrices sont ensuite additionnées pour obtenir l'inertie Intra
 $$S{S_{{\text{intra }}}} = \sum\limits_{j = 1}^k {\sum\limits_{i = 1}^{{n_k}} {{d^2}({x_{i,j}},{g_j})} }  = \sum\limits_{j = 1}^k {{{({X_{ik}} - {G_k})}^t} \times ({X_{ik}} - {G_k})} $$
 
 ```{r SS_Intra}
+<<<<<<< HEAD
 # à compléter
 SS_Intra <- colSums(SS_partiel_Intra)
 head(SS_Intra)
+=======
+c
+>>>>>>> 159e1ee36ed71f32d4c4263cb35ab13d08c3d2d3
 ```
 
 #### <FONT color='#0066CC'><FONT size = 4> 4.3 Inertie inter classe </FONT></FONT>
