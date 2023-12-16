@@ -1,0 +1,151 @@
+---
+title: "Emotion Dataset"
+author: "Antoine"
+date: "10/11/2020"
+output: html_document
+---
+
+# Emotion Dataset :
+Projet 1 : Emotion Dataset
+
+### Initialisation de l'environnement :
+```{r}
+rm(list = ls())
+library(kableExtra)
+library(tidyverse)
+library(dplyr)
+library(readr)
+```
+
+---
+
+## 1. Chargement et exploration des données :
+
+```{r}
+dataset_path <- "./Projet1/Emotion_classify_Data.csv"
+```
+
+### Chargez le jeu de données dans R.
+
+```{r}
+dataset <- read.csv(dataset_path, header = TRUE, sep = ",")
+head(dataset, 12) %>% kbl(digits=3) %>%
+  kable_material_dark(bootstrap_options = "striped", full_width = F, position = "center", latex_options = 'stripped')
+```
+Le dataset contient 2 colonnes :
+1. Un "commenten" en format texte
+2. Une "emotion" parmis : "fear", "anger", "joy".
+
+### EDA :
+
+Effectuez une analyse exploratoire des données (EDA) pour comprendre la distribution des classes, la longueur des entrées de texte et tout autre modèle.
+
+**Analyse globale du dataset :**
+```{r}
+print(paste("Nombre de lignes : ", nrow(dataset)))
+print(paste("Nombre de colonnes : ", ncol(dataset)))
+print(paste("Nombre de valeurs na : ", sum(is.na(dataset))))
+print(paste("Nombre de classe : ", length(unique(dataset$Emotion))))
+print("Nombre de valeurs par classe : ")
+print(table(dataset$Emotion))
+```
+Le nombre de données est equivalent pour chaque classe. Il n'y a pas de valeurs manquantes. Le dataset est donc équilibré et on pourra donc l'utiliser sur différentes méthodes de machine learning.
+
+
+**Analyse approfondie :**
+
+1. On regarde la longueur moyenne et la variance des commentaires par classe :
+```{r}
+dataset %>% group_by(Emotion) %>% summarise(Mean_Char_Length = mean(nchar(Comment)), Var_Char_Length = var(nchar(Comment)))
+```
+
+On remarque que la taille est sensiblement la même pour chaque classe. On ne peut donc rien en déduire. De même pour la variance.
+
+[//]: # (TODO : Il y a un problème avec la variance qui est trop grande. ?? !!)
+
+Quel est le tweet le plus long ?
+```{r}
+long <- dataset[which.max(nchar(dataset$Comment)),]
+court <- dataset[which.min(nchar(dataset$Comment)),]
+
+print(long)
+print(court)
+```
+
+## 2. Prétraitement des données :
+
+### Nettoyez les données textuelles en supprimant les caractères spéciaux, les chiffres et les mots vides.
+
+```{r}
+clean_text <- function(text){
+  text <- iconv(text, "UTF-8", "ASCII", sub = " ") # remove caractères spéciaux
+  text <- gsub('http\\S+\\s*','',x) # remove URLs
+  text <- gsub('#\\S+','',x) # remove hashtags
+  text <- gsub("[[:digit:]]", "", text) # remove numbers
+  text <- gsub("[ \t]{2,}", "", text)   # remove 2+ spaces
+  text <- gsub("\\s+", " ", text)    # replace multiple spaces with one space
+  text <- trimws(text)  # remove leading and trailing spaces
+  text <- text[text != ""] # remove empty strings
+  text <- tolower(text) # to lower case
+  return(text)
+}
+
+```
+
+On crée une fonction assez restrictive qui filtre beaucoup pour avoir une uniformité dans les données. L'idée est de s'assurer que toutes les méthodes de traitements peuvent être appliquées sur les données.
+
+**Un test :**
+```{r}
+# string_test <- "tst 'é'(è-è' ç ù % 5e Á	Â	Æ	Ç	È	É	Ê	Ë	Ì	Í	Î	Ï	Ñ	Ò	Ó	Ô	Œ		ß	·	’	“	”	«	»	•	–	—	±	×	 "
+# new_str <- clean_text(string_test)
+# print(new_str)
+```
+
+### Appliquez “tokenization”, “stemming”, or “lemmatisation”.
+
+Some [interesting advices here](https://tilburgsciencehub.com/building-blocks/prepare-your-data-for-analysis/data-preparation/text-preprocessing/) on tm and text Pre-processing.
+
+**Définittion :**
+Tokenization :
+
+1. Tokenization : Division d'un texte en unités plus petites appelées "tokens" (mots, phrases, etc.) pour faciliter l'analyse du langage.
+2. Stemming : Réduction d'un mot à sa racine en supprimant les suffixes pour agréger les variantes d'un mot.
+3. Lemmatisation : Réduction d'un mot à sa forme canonique pour représenter sémantiquement les différentes formes du même mot.
+
+#### Créer le corpus :
+```{r}
+# install.packages("tm")
+library(tm)
+```
+```{r}
+corpus <- VCorpus(VectorSource(dataset))
+corpus <-tm_map(corpus_,clean_text)
+corpus <- tm_map(review_corpus, removeWords, stopwords("english")) # i.e. upper link
+print(corpus$content)
+```
+#### Lemmatisation :
+On va dans un premier temps faire de la lemmatisation. On choisit cette option, car on suppose que le contenu provient de twitter et est donc assez polarisé, et avec une expression simple, sans trop de préfixe ou suffixe.
+
+```{r}
+# Lemmatization
+Lemmatized_corpus<- tm_map(corpus, content_transformer(lemmatize_strings()))
+
+tdm<- TermDocumentMatrix(Lemmatized_corpus, control = list(wordlengths = c(1,Inf)))
+```
+```{r}
+# inspect frequent words
+freq_terms<- findFreqTerms(tdm, lowfreq=50)
+
+term_freq<- rowSums(as.matrix(tdm))
+term_freq<- subset(term_freq, term_freq>=20)
+df<- data.frame(term = names(term_freq), freq = term_freq)
+
+# Now plotting the top 25 frequent words
+library(ggplot2)
+
+df_plot<- df %>%
+        top_n(25)
+
+# Plot word frequency
+ggplot(df_plot, aes(x = reorder(term, +freq), y = freq, fill = freq)) + geom_bar(stat = "identity")+ scale_colour_gradientn(colors = terrain.colors(10))+ xlab("Terms")+ ylab("Count")+coord_flip()
+```
