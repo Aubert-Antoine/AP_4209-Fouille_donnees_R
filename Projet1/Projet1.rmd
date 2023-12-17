@@ -79,10 +79,12 @@ print(court)
 ```{r}
 clean_text <- function(text){
   text <- iconv(text, "UTF-8", "ASCII", sub = " ") # remove caractères spéciaux
-  text <- gsub('http\\S+\\s*','',x) # remove URLs
-  text <- gsub('#\\S+','',x) # remove hashtags
+  text <- gsub('http\\S+\\s*','',text) # remove URLs
+  text <- gsub('#\\S+','',text) # remove hashtags
   text <- gsub("[[:digit:]]", "", text) # remove numbers
+  text <- textclean::replace_contraction(text) # replace contractions
   text <- gsub("[ \t]{2,}", "", text)   # remove 2+ spaces
+  text <- gsub(' +', ' ', text) # remove extra whitespaces
   text <- gsub("\\s+", " ", text)    # replace multiple spaces with one space
   text <- trimws(text)  # remove leading and trailing spaces
   text <- text[text != ""] # remove empty strings
@@ -116,36 +118,47 @@ Tokenization :
 ```{r}
 # install.packages("tm")
 library(tm)
+library(textstem)
+library(textTinyR)
 ```
 ```{r}
-corpus <- VCorpus(VectorSource(dataset))
-corpus <-tm_map(corpus_,clean_text)
-corpus <- tm_map(review_corpus, removeWords, stopwords("english")) # i.e. upper link
-print(corpus$content)
+corpus <- VCorpus(VectorSource(dataset$Comment))
+corpus <-tm_map(corpus,clean_text)
+corpus <- tm_map(corpus, removeWords, stopwords("english")) # i.e. upper link
+
+
+first_element <- corpus$content[[1]]
+print(first_element)
 ```
 #### Lemmatisation :
 On va dans un premier temps faire de la lemmatisation. On choisit cette option, car on suppose que le contenu provient de twitter et est donc assez polarisé, et avec une expression simple, sans trop de préfixe ou suffixe.
 
 ```{r}
-# Lemmatization
-Lemmatized_corpus<- tm_map(corpus, content_transformer(lemmatize_strings()))
+# Lemmatize the corpus
+corpus <- tm_map(corpus, lemmatize_strings)
 
-tdm<- TermDocumentMatrix(Lemmatized_corpus, control = list(wordlengths = c(1,Inf)))
+# Inspect the lemmatized corpus
+inspect(head(corpus))
 ```
+https://www.rdocumentation.org/packages/tm/versions/0.7-11/topics/weightSMART
+
+
 ```{r}
-# inspect frequent words
-freq_terms<- findFreqTerms(tdm, lowfreq=50)
+dtm <- DocumentTermMatrix(corpus)
+dtm_tfidf <- weightTfIdf(dtm)
 
-term_freq<- rowSums(as.matrix(tdm))
-term_freq<- subset(term_freq, term_freq>=20)
-df<- data.frame(term = names(term_freq), freq = term_freq)
-
-# Now plotting the top 25 frequent words
-library(ggplot2)
-
-df_plot<- df %>%
-        top_n(25)
-
-# Plot word frequency
-ggplot(df_plot, aes(x = reorder(term, +freq), y = freq, fill = freq)) + geom_bar(stat = "identity")+ scale_colour_gradientn(colors = terrain.colors(10))+ xlab("Terms")+ ylab("Count")+coord_flip()
+# Convertir la matrice en un data.frame pour une meilleure lisibilité
+dtm_tfidf_df <- as.data.frame(as.matrix(dtm_tfidf))
 ```
+
+
+# Example of lemmatization vs stemming :
+
+```{r}
+bw <- c('are', 'am', 'being', 'been', 'be')
+
+stem_words(bw)
+
+lemmatize_words(bw)
+```
+
