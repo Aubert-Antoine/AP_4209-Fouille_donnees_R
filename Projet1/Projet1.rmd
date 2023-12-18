@@ -76,6 +76,8 @@ print(court)
 
 ### Nettoyez les données textuelles en supprimant les caractères spéciaux, les chiffres et les mots vides.
 
+https://stat.ethz.ch/R-manual/R-patched/library/base/html/regex.html
+
 ```{r}
 clean_text <- function(text){
   text <- iconv(text, "UTF-8", "ASCII", sub = " ") # remove caractères spéciaux
@@ -143,22 +145,14 @@ inspect(head(corpus))
 https://www.rdocumentation.org/packages/tm/versions/0.7-11/topics/weightSMART
 
 
-```{r}
-dtm <- DocumentTermMatrix(corpus)
-dtm_tfidf <- weightTfIdf(dtm)
+#### Term Frequency-Inverse Document Frequency (TF-IDF) :
 
-# Convertir la matrice en un data.frame pour une meilleure lisibilité
-dtm_tfidf_df <- as.data.frame(as.matrix(dtm_tfidf))
-```
+https://openclassrooms.com/fr/courses/6532301-introduction-to-natural-language-processing/8081363-apply-the-tf-idf-vectorization-approach#/id/r-8096131
+https://medium.com/@er.iit.pradeep09/understanding-tf-idf-in-nlp-a-comprehensive-guide-26707db0cec5
 
 
-# Example of lemmatization vs stemming :
 
 ```{r}
-bw <- c('are', 'am', 'being', 'been', 'be')
 
-stem_words(bw)
-
-lemmatize_words(bw)
 ```
 

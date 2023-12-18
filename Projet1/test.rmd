@@ -1,0 +1,85 @@
+---
+title: "R Notebook"
+output: html_document
+---
+
+```{r}
+# Installer les packages si ce n'est pas déjà fait
+# install.packages("tm")
+# install.packages("textstem")
+# install.packages("slam")
+
+library(tm)
+library(textstem)
+library(slam)
+```
+
+```{r}
+# Exemple de données textuelles
+tset <- c("Ceci est un exemple", "est", "Et un dernier exemple avec des mots vides et des espaces blancs", "je suis le plus grand")
+```
+
+
+```{r}
+clean_text <- function(text){
+text <- iconv(text, "UTF-8", "ASCII", sub = " ") # remove caractères spéciaux
+text <- gsub('http\\S+\\s*','',text) # remove URLs
+text <- gsub('#\\S+','',text) # remove hashtags
+text <- gsub("[[:digit:]]", "", text) # remove numbers
+text <- textclean::replace_contraction(text) # replace contractions
+text <- gsub("[ \t]{2,}", "", text)   # remove 2+ spaces
+text <- gsub(' +', ' ', text) # remove extra whitespaces
+text <- gsub("\\s+", " ", text)    # replace multiple spaces with one space
+text <- trimws(text)  # remove leading and trailing spaces
+text <- text[text != ""] # remove empty strings
+text <- tolower(text) # to lower case
+return(text)
+}
+
+
+tset <- clean_text(tset)
+```
+
+
+```{r}
+
+  # Créer un Corpus
+  corpus <- Corpus(VectorSource(tset))
+
+  # Nettoyer les données
+  corpus <- tm_map(corpus, content_transformer(tolower))  # Convertir en minuscules
+  corpus <- tm_map(corpus, removePunctuation)  # Supprimer la ponctuation
+  corpus <- tm_map(corpus, removeNumbers)  # Supprimer les chiffres
+  corpus <- tm_map(corpus, removeWords, stopwords("fr"))  # Supprimer les mots vides
+
+  # Appliquer la lemmatisation
+  corpus <- tm_map(corpus, content_transformer(function(x) lemmatize_words(unlist(strsplit(x, " ")))))
+
+  # Créer un Document-Term Matrix (DTM) avec TF
+  dtm <- DocumentTermMatrix(corpus)
+
+  # Convertir la DTM en une matrice dense
+  matrix_tf <- as.matrix(dtm)
+
+  # Calculer la fréquence des termes (TF)
+  tf <- slam::row_sums(matrix_tf)
+
+  # Vectorisation avec TF
+  vector_tf <- matrix_tf / tf
+
+  # Créer un Document-Term Matrix (DTM) avec TF-IDF
+  dtm_tfidf <- weightTfIdf(dtm)
+
+  # Convertir la matrice en un data.frame pour une meilleure lisibilité
+  dtm_tfidf_df <- as.data.frame(as.matrix(dtm_tfidf))
+
+  # Afficher les résultats
+  print("Document-Term Matrix avec TF:")
+  print(matrix_tf)
+  cat("\n")
+  print("Vectorisation avec TF:")
+  print(vector_tf)
+  cat("\n")
+  print("Document-Term Matrix avec TF-IDF:")
+  print(dtm_tfidf_df)
+```
