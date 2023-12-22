@@ -11,9 +11,7 @@ Projet 1 : Emotion Dataset
 ### Initialisation de l'environnement :
 ```{r}
 rm(list = ls())
-# install.packages("tm")
-# install.packages("textstem")
-# install.packages("textTinyR")
+# install.packages("___")
 
 library(kableExtra)
 library(tidyverse)
@@ -22,6 +20,7 @@ library(readr)
 library(tm)
 library(textstem)
 library(textTinyR)
+library(e1071)
 ```
 
 ---
@@ -45,9 +44,11 @@ Le dataset contient 2 colonnes :
 
 ### EDA :
 
-Effectuez une analyse exploratoire des données (EDA) pour comprendre la distribution des classes, la longueur des entrées de texte et tout autre modèle.
+Effectuez une analyse exploratoire des données (EDA) pour comprendre la distribution des classes,
+la longueur des entrées de texte et tout autre modèle.
 
 **Analyse globale du dataset :**
+
 ```{r}
 print(paste("Nombre de lignes : ", nrow(dataset)))
 print(paste("Nombre de colonnes : ", ncol(dataset)))
@@ -56,7 +57,8 @@ print(paste("Nombre de classe : ", length(unique(dataset$Emotion))))
 print("Nombre de valeurs par classe : ")
 print(table(dataset$Emotion))
 ```
-Le nombre de données est equivalent pour chaque classe. Il n'y a pas de valeurs manquantes. Le dataset est donc équilibré et on pourra donc l'utiliser sur différentes méthodes de machine learning.
+Le nombre de données est equivalent pour chaque classe. Il n'y a pas de valeurs manquantes.
+Le dataset est donc équilibré et on pourra donc l'utiliser sur différentes méthodes de machine learning.
 
 
 **Analyse approfondie :**
@@ -88,7 +90,7 @@ https://stat.ethz.ch/R-manual/R-patched/library/base/html/regex.html
 ```{r}
 clean_text <- function(text){
   text <- iconv(text, "UTF-8", "ASCII", sub = " ") # remove caractères spéciaux
-  text <- gsub('http\\S+\\s*','',text) # remove URLs
+  # text <- gsub('http\\S+\\s*','',text) # remove URLs
   text <- gsub('#\\S+','',text) # remove hashtags
   text <- gsub("[[:digit:]]", "", text) # remove numbers
   text <- textclean::replace_contraction(text) # replace contractions
@@ -103,7 +105,8 @@ clean_text <- function(text){
 
 ```
 
-On crée une fonction assez restrictive qui filtre beaucoup pour avoir une uniformité dans les données. L'idée est de s'assurer que toutes les méthodes de traitements peuvent être appliquées sur les données.
+On crée une fonction assez restrictive qui filtre beaucoup pour avoir une uniformité dans les données.
+L'idée est de s'assurer que toutes les méthodes de traitements peuvent être appliquées sur les données.
 
 **Un test :**
 ```{r}
@@ -131,26 +134,28 @@ corpus <-tm_map(corpus,clean_text)
 corpus <- tm_map(corpus, removeWords, stopwords("english")) # i.e. upper link
 ```
 #### Lemmatisation :
-On va dans un premier temps faire de la lemmatisation. On choisit cette option, car on suppose que le contenu provient de twitter et est donc assez polarisé, et avec une expression simple, sans trop de préfixe ou suffixe.
+On va dans un premier temps faire de la lemmatisation. On choisit cette option,
+car on suppose que le contenu provient de twitter et est donc assez polarisé, et avec une expression simple,
+sans trop de préfixe ou suffixe.
 ```{r}
 # Lemmatize the corpus
-corpus_lemmatize <- tm_map(corpus, lemmatize_strings)
+# corpus_vec <- tm_map(corpus, lemmatize_strings)
+corpus_vec <- tm_map(corpus, stem_strings)
 
 # Inspect the lemmatized corpus
-head(corpus_lemmatize$content$Comment)
+head(corpus_vec$content$Comment)
 ```
 https://www.rdocumentation.org/packages/tm/versions/0.7-11/topics/weightSMART
 
 
 #### Term Frequency-Inverse Document Frequency (TF-IDF) :
 
-https://openclassrooms.com/fr/courses/6532301-introduction-to-natural-language-processing/8081363-apply-the-tf-idf-vectorization-approach#/id/r-8096131
 https://medium.com/@er.iit.pradeep09/understanding-tf-idf-in-nlp-a-comprehensive-guide-26707db0cec5
 
 
 
 ```{r}
-dtm <- DocumentTermMatrix(corpus_lemmatize$content$Comment)
+dtm <- DocumentTermMatrix(corpus_vec$content$Comment)
 
 # Apply TF-IDF weighting
 corpus_tfidf <- weightTfIdf(dtm)
@@ -173,21 +178,17 @@ set.seed(123)
 # Determine the number of rows for the training set
 train_indices <- sample(1:nrow(corpus_tfidf_df), size = 0.7 * nrow(corpus_tfidf_df))
 
-# Create the training set
 train_set <- corpus_tfidf_df[train_indices, ]
-
-# Create the test set
 test_set <- corpus_tfidf_df[-train_indices, ]
 
 
-train_emotion <- corpus_lemmatize$content$Emotion[train_indices]
-test_emotion <- corpus_lemmatize$content$Emotion[-train_indices]
+train_emotion <- corpus_vec$content$Emotion[train_indices]
+test_emotion <- corpus_vec$content$Emotion[-train_indices]
 ```
 
 ## Entraînement du modèle bayésien :
 ```{r}
 # Load the e1071 package
-library(e1071)
 
 # Train the Naive Bayes model
 model <- naiveBayes(train_set, train_emotion)
@@ -202,7 +203,7 @@ predictions <- predict(model, test_set)
 library(caret)
 
 # Calculate the confusion matrix and related statistics
-cm <- confusionMatrix(predictions, test_emotion)
+cm <- confusionMatrix(predictions, as.factor(test_emotion))
 
 # Extract the accuracy, precision, recall, and F1-score
 accuracy <- cm$overall['Accuracy']
@@ -211,8 +212,10 @@ recall <- cm$byClass['Sensitivity']
 F1 <- 2 * (precision * recall) / (precision + recall)
 
 # Print the results
-print(paste("Accuracy: ", accuracy))
-print(paste("Precision: ", precision))
-print(paste("Recall: ", recall))
-print(paste("F1 Score: ", F1))
+# print(paste("Accuracy: ", accuracy))
+# print(paste("Precision: ", precision))
+# print(paste("Recall: ", recall))
+# print(paste("F1 Score: ", F1))
+
+print(cm)
 ```

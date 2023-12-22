@@ -1,0 +1,30 @@
+Confusion Matrix and Statistics
+
+          Reference
+Prediction anger fear joi
+     anger   279  202 226
+     fear    330  356 374
+     joi       4    3   8
+
+Overall Statistics
+                                          
+               Accuracy : 0.3608          
+                 95% CI : (0.3385, 0.3836)
+    No Information Rate : 0.344           
+    P-Value [Acc > NIR] : 0.07103         
+                                          
+                  Kappa : 0.0508          
+                                          
+ Mcnemar's Test P-Value : < 2e-16         
+
+Statistics by Class:
+
+                     Class: anger Class: fear Class: joi
+Sensitivity                0.4551      0.6346   0.013158
+Specificity                0.6339      0.4234   0.994037
+Pos Pred Value             0.3946      0.3358   0.533333
+Neg Pred Value             0.6893      0.7161   0.660441
+Prevalence                 0.3440      0.3148   0.341190
+Detection Rate             0.1566      0.1998   0.004489
+Detection Prevalence       0.3967      0.5948   0.008418
+Balanced Accuracy          0.5445      0.5290   0.503598
