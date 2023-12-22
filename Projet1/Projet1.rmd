@@ -21,6 +21,7 @@ library(tm)
 library(textstem)
 library(textTinyR)
 library(e1071)
+library(caret)
 ```
 
 ---
@@ -90,7 +91,7 @@ https://stat.ethz.ch/R-manual/R-patched/library/base/html/regex.html
 ```{r}
 clean_text <- function(text){
   text <- iconv(text, "UTF-8", "ASCII", sub = " ") # remove caractères spéciaux
-  # text <- gsub('http\\S+\\s*','',text) # remove URLs
+  text <- gsub('http\\S+\\s*','',text) # remove URLs
   text <- gsub('#\\S+','',text) # remove hashtags
   text <- gsub("[[:digit:]]", "", text) # remove numbers
   text <- textclean::replace_contraction(text) # replace contractions
@@ -140,6 +141,7 @@ sans trop de préfixe ou suffixe.
 ```{r}
 # Lemmatize the corpus
 # corpus_vec <- tm_map(corpus, lemmatize_strings)
+# corpus_vec <- tm_map(corpus, stem_strings)
 corpus_vec <- tm_map(corpus, stem_strings)
 
 # Inspect the lemmatized corpus
@@ -188,20 +190,12 @@ test_emotion <- corpus_vec$content$Emotion[-train_indices]
 
 ## Entraînement du modèle bayésien :
 ```{r}
-# Load the e1071 package
-
-# Train the Naive Bayes model
 model <- naiveBayes(train_set, train_emotion)
-
-# Make predictions on the test set
 predictions <- predict(model, test_set)
 ```
 ## Évaluation du modèle :
 
 ```{r}
-# Load the caret package
-library(caret)
-
 # Calculate the confusion matrix and related statistics
 cm <- confusionMatrix(predictions, as.factor(test_emotion))
 
