@@ -11,10 +11,17 @@ Projet 1 : Emotion Dataset
 ### Initialisation de l'environnement :
 ```{r}
 rm(list = ls())
+# install.packages("tm")
+# install.packages("textstem")
+# install.packages("textTinyR")
+
 library(kableExtra)
 library(tidyverse)
 library(dplyr)
 library(readr)
+library(tm)
+library(textstem)
+library(textTinyR)
 ```
 
 ---
@@ -30,7 +37,7 @@ dataset_path <- "./Projet1/Emotion_classify_Data.csv"
 ```{r}
 dataset <- read.csv(dataset_path, header = TRUE, sep = ",")
 head(dataset, 12) %>% kbl(digits=3) %>%
-  kable_material_dark(bootstrap_options = "striped", full_width = F, position = "center", latex_options = 'stripped')
+        kable_material_dark(bootstrap_options = "striped", full_width = F, position = "center", latex_options = 'stripped')
 ```
 Le dataset contient 2 colonnes :
 1. Un "commenten" en format texte
@@ -117,30 +124,20 @@ Tokenization :
 3. Lemmatisation : Réduction d'un mot à sa forme canonique pour représenter sémantiquement les différentes formes du même mot.
 
 #### Créer le corpus :
+
 ```{r}
-# install.packages("tm")
-library(tm)
-library(textstem)
-library(textTinyR)
-```
-```{r}
-corpus <- VCorpus(VectorSource(dataset$Comment))
+corpus <- VCorpus(VectorSource(dataset))
 corpus <-tm_map(corpus,clean_text)
 corpus <- tm_map(corpus, removeWords, stopwords("english")) # i.e. upper link
-
-
-first_element <- corpus$content[[1]]
-print(first_element)
 ```
 #### Lemmatisation :
 On va dans un premier temps faire de la lemmatisation. On choisit cette option, car on suppose que le contenu provient de twitter et est donc assez polarisé, et avec une expression simple, sans trop de préfixe ou suffixe.
-
 ```{r}
 # Lemmatize the corpus
-corpus <- tm_map(corpus, lemmatize_strings)
+corpus_lemmatize <- tm_map(corpus, lemmatize_strings)
 
 # Inspect the lemmatized corpus
-inspect(head(corpus))
+head(corpus_lemmatize$content$Comment)
 ```
 https://www.rdocumentation.org/packages/tm/versions/0.7-11/topics/weightSMART
 
@@ -153,6 +150,69 @@ https://medium.com/@er.iit.pradeep09/understanding-tf-idf-in-nlp-a-comprehensive
 
 
 ```{r}
+dtm <- DocumentTermMatrix(corpus_lemmatize$content$Comment)
 
+# Apply TF-IDF weighting
+corpus_tfidf <- weightTfIdf(dtm)
+
+# Inspect the result
+inspect(corpus_tfidf)
 ```
 
+## Let split our Document
+
+https://www.statology.org/train-test-split-r/
+
+```{r}
+# Convert to data frame
+corpus_tfidf_df <- as.data.frame(as.matrix(corpus_tfidf))
+
+# Set the seed for reproducibility
+set.seed(123)
+
+# Determine the number of rows for the training set
+train_indices <- sample(1:nrow(corpus_tfidf_df), size = 0.7 * nrow(corpus_tfidf_df))
+
+# Create the training set
+train_set <- corpus_tfidf_df[train_indices, ]
+
+# Create the test set
+test_set <- corpus_tfidf_df[-train_indices, ]
+
+
+train_emotion <- corpus_lemmatize$content$Emotion[train_indices]
+test_emotion <- corpus_lemmatize$content$Emotion[-train_indices]
+```
+
+## Entraînement du modèle bayésien :
+```{r}
+# Load the e1071 package
+library(e1071)
+
+# Train the Naive Bayes model
+model <- naiveBayes(train_set, train_emotion)
+
+# Make predictions on the test set
+predictions <- predict(model, test_set)
+```
+## Évaluation du modèle :
+
+```{r}
+# Load the caret package
+library(caret)
+
+# Calculate the confusion matrix and related statistics
+cm <- confusionMatrix(predictions, test_emotion)
+
+# Extract the accuracy, precision, recall, and F1-score
+accuracy <- cm$overall['Accuracy']
+precision <- cm$byClass['Pos Pred Value']
+recall <- cm$byClass['Sensitivity']
+F1 <- 2 * (precision * recall) / (precision + recall)
+
+# Print the results
+print(paste("Accuracy: ", accuracy))
+print(paste("Precision: ", precision))
+print(paste("Recall: ", recall))
+print(paste("F1 Score: ", F1))
+```
