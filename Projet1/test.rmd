@@ -3,83 +3,134 @@ title: "R Notebook"
 output: html_document
 ---
 
+
 ```{r}
-# Installer les packages si ce n'est pas déjà fait
+# install.packages("kableExtra")
+# install.packages("tidyverse")
 # install.packages("tm")
+# install.packages("textclean")
+# install.packages("e1071")
+# install.packages("caret")
 # install.packages("textstem")
-# install.packages("slam")
+```
 
-library(tm)
+```{r}
+library(kableExtra)  # for table formatting
+library(tidyverse)   # for data manipulation
+library(tm)          # for text mining
+library(textclean)   # for text cleaning
+library(e1071)       # for naiveBayes
+library(caret)       # for confusionMatrix
 library(textstem)
-library(slam)
 ```
 
 ```{r}
-# Exemple de données textuelles
-tset <- c("Ceci est un exemple", "est", "Et un dernier exemple avec des mots vides et des espaces blancs", "je suis le plus grand")
+dataset_path <- "../content/Emotion_classify_Data.csv"
+dataset <- read.csv(dataset_path, header = TRUE, sep = ",")
 ```
 
+---
 
 ```{r}
-clean_text <- function(text){
-text <- iconv(text, "UTF-8", "ASCII", sub = " ") # remove caractères spéciaux
-text <- gsub('http\\S+\\s*','',text) # remove URLs
-text <- gsub('#\\S+','',text) # remove hashtags
-text <- gsub("[[:digit:]]", "", text) # remove numbers
-text <- textclean::replace_contraction(text) # replace contractions
-text <- gsub("[ \t]{2,}", "", text)   # remove 2+ spaces
-text <- gsub(' +', ' ', text) # remove extra whitespaces
-text <- gsub("\\s+", " ", text)    # replace multiple spaces with one space
-text <- trimws(text)  # remove leading and trailing spaces
-text <- text[text != ""] # remove empty strings
-text <- tolower(text) # to lower case
-return(text)
+clean_text <- function(text) {
+  text <- iconv(text, "UTF-8", "ASCII", sub = " ") # remove caractères spéciaux
+  text <- gsub('http\\S+\\s*', "", text) # remove URLs
+  text <- gsub('#\\S+', "", text) # remove hashtags
+  text <- gsub("[[:digit:]]", "", text) # remove numbers
+  text <- textclean::replace_contraction(text) # replace contractions
+  text <- gsub(' +', ' ', text) # remove extra whitespaces
+  text <- trimws(text)  # remove leading and trailing spaces
+  text <- text[text != ""] # remove empty strings
+  text <- tolower(text) # to lower case
+  return(text)
+}
+```
+
+```{r}
+create_corpus <- function(dataset, clean_text_func, vec_string_methode) {
+  corpus <- VCorpus(VectorSource(dataset))
+  corpus <- tm_map(corpus, clean_text_func)
+  # corpus <- tm_map(corpus, removeWords, stopwords("english"))
+  corpus_vec <- tm_map(corpus, vec_string_methode)
+
+  return(corpus_vec)
+}
+
+corpus <- create_corpus(dataset, clean_text, lemmatize_strings)
+print(corpus$content$Comment[1])
+print(corpus$content$Emotion[1])
+
+
+```
+```{r}
+create_tfidf <- function(corpus) {
+  dtm <- DocumentTermMatrix(corpus$content$Comment)
+
+  terms <- Terms(dtm)
+  # print(head(terms))
+  corpus_tfidf <- weightTfIdf(dtm)
+  corpus_tfidf_df <- as.data.frame(as.matrix(corpus_tfidf))
+
+  inspect(corpus_tfidf)
+  return(corpus_tfidf_df)
 }
 
 
-tset <- clean_text(tset)
+corpus_tfidf_df <- create_tfidf(corpus)
 ```
 
 
 ```{r}
+test_train_split <- function(tfidf_df, raw_data, rate = 0.7, custom.seed = 123) {
+  set.seed(custom.seed)
 
-  # Créer un Corpus
-  corpus <- Corpus(VectorSource(tset))
+  tfidf_df <- as.data.frame(tfidf_df)
+  # Determine the number of rows for the training set
+  train_indices <- sample(seq_len(nrow(tfidf_df)), size = rate * nrow(tfidf_df))
 
-  # Nettoyer les données
-  corpus <- tm_map(corpus, content_transformer(tolower))  # Convertir en minuscules
-  corpus <- tm_map(corpus, removePunctuation)  # Supprimer la ponctuation
-  corpus <- tm_map(corpus, removeNumbers)  # Supprimer les chiffres
-  corpus <- tm_map(corpus, removeWords, stopwords("fr"))  # Supprimer les mots vides
+  train_commentaire <- tfidf_df[train_indices, ]
+  test_commentaire <- tfidf_df[-train_indices, ]
 
-  # Appliquer la lemmatisation
-  corpus <- tm_map(corpus, content_transformer(function(x) lemmatize_words(unlist(strsplit(x, " ")))))
+  train_emotion <- raw_data$Emotion[train_indices]
+  test_emotion <- raw_data$Emotion[-train_indices]
 
-  # Créer un Document-Term Matrix (DTM) avec TF
-  dtm <- DocumentTermMatrix(corpus)
+  return(list(train_set = train_commentaire, train_emotion = train_emotion, test_set = test_commentaire, test_emotion = test_emotion))
+}
 
-  # Convertir la DTM en une matrice dense
-  matrix_tf <- as.matrix(dtm)
+custom_dataset <- test_train_split(corpus_tfidf_df, dataset)
+train_commentaire <- custom_dataset[1]
+train_emotion <- custom_dataset[2]
+test_commentaire <- custom_dataset[3]
+test_emotion <- custom_dataset[4]
+```
+```{r}
+# model <- naiveBayes(train_commentaire, train_emotion)
+model <- naiveBayes(as.matrix(train_commentaire), train_emotion)
+predictions <- predict(model, as.matrix(test_commentaire))
+```
+---
 
-  # Calculer la fréquence des termes (TF)
-  tf <- slam::row_sums(matrix_tf)
+```{r}
+cm <- confusionMatrix(predictions, as.factor(test_emotion))
 
-  # Vectorisation avec TF
-  vector_tf <- matrix_tf / tf
+# Extract the accuracy, precision, recall, and F1-score
+# accuracy <- cm$overall['Accuracy']
+# precision <- cm$byClass['Pos Pred Value']
+# recall <- cm$byClass['Sensitivity']
+# F1 <- 2 * (precision * recall) / (precision + recall)
 
-  # Créer un Document-Term Matrix (DTM) avec TF-IDF
-  dtm_tfidf <- weightTfIdf(dtm)
+# # Print the results
+# print(paste("Accuracy: ", accuracy))
+# print(paste("Precision: ", precision))
+# print(paste("Recall: ", recall))
+# print(paste("F1 Score: ", F1))
 
-  # Convertir la matrice en un data.frame pour une meilleure lisibilité
-  dtm_tfidf_df <- as.data.frame(as.matrix(dtm_tfidf))
+print(cm)
+```
 
-  # Afficher les résultats
-  print("Document-Term Matrix avec TF:")
-  print(matrix_tf)
-  cat("\n")
-  print("Vectorisation avec TF:")
-  print(vector_tf)
-  cat("\n")
-  print("Document-Term Matrix avec TF-IDF:")
-  print(dtm_tfidf_df)
+```{r}
+# predictions <- predict(model, data.frame(Comment = "No ! It's false, he'd make shit"))
+# predictions <- predict(model, data.frame(Comment = "Yes it is lovely"))
+predictions <- predict(model, data.frame(Comment = "I am not sure about that, I think it is dangerous"))
+predictions
 ```
