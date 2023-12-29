@@ -178,7 +178,7 @@ corpus_tfidf_df <- as.data.frame(as.matrix(corpus_tfidf))
 set.seed(123)
 
 # Determine the number of rows for the training set
-train_indices <- sample(1:nrow(corpus_tfidf_df), size = 0.7 * nrow(corpus_tfidf_df))
+train_indices <- sample(seq_len(nrow(corpus_tfidf_df)), size = 0.7 * nrow(corpus_tfidf_df))
 
 train_set <- corpus_tfidf_df[train_indices, ]
 test_set <- corpus_tfidf_df[-train_indices, ]

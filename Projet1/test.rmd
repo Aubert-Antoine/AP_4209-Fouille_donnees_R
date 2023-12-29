@@ -25,7 +25,7 @@ library(textstem)
 ```
 
 ```{r}
-dataset_path <- "../content/Emotion_classify_Data.csv"
+dataset_path <- "./Projet1/Emotion_classify_Data.csv"
 dataset <- read.csv(dataset_path, header = TRUE, sep = ",")
 ```
 
@@ -56,7 +56,7 @@ create_corpus <- function(dataset, clean_text_func, vec_string_methode) {
   return(corpus_vec)
 }
 
-corpus <- create_corpus(dataset, clean_text, lemmatize_strings)
+corpus <- create_corpus(dataset, clean_text, stem_strings)
 print(corpus$content$Comment[1])
 print(corpus$content$Emotion[1])
 
@@ -129,8 +129,8 @@ print(cm)
 ```
 
 ```{r}
-# predictions <- predict(model, data.frame(Comment = "No ! It's false, he'd make shit"))
-# predictions <- predict(model, data.frame(Comment = "Yes it is lovely"))
-predictions <- predict(model, data.frame(Comment = "I am not sure about that, I think it is dangerous"))
-predictions
+# pred <- predict(model, data.frame(Comment = "No ! It's false, he'd make shit"))
+# pred <- predict(model, data.frame(Comment = "Yes it is lovely"))
+pred <- predict(model, data.frame(Comment = "I am not sure about that, I think it is dangerous"))
+pred
 ```
