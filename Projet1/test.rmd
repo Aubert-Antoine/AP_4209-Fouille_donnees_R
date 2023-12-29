@@ -66,7 +66,7 @@ print(corpus$content$Emotion[1])
 create_tfidf <- function(corpus) {
   dtm <- DocumentTermMatrix(corpus$content$Comment)
 
-  terms <- Terms(dtm)
+  # terms <- Terms(dtm)
   # print(head(terms))
   corpus_tfidf <- weightTfIdf(dtm)
   corpus_tfidf_df <- as.data.frame(as.matrix(corpus_tfidf))
@@ -85,7 +85,6 @@ test_train_split <- function(tfidf_df, raw_data, rate = 0.7, custom.seed = 123) 
   set.seed(custom.seed)
 
   tfidf_df <- as.data.frame(tfidf_df)
-  # Determine the number of rows for the training set
   train_indices <- sample(seq_len(nrow(tfidf_df)), size = rate * nrow(tfidf_df))
 
   train_commentaire <- tfidf_df[train_indices, ]
@@ -94,43 +93,70 @@ test_train_split <- function(tfidf_df, raw_data, rate = 0.7, custom.seed = 123) 
   train_emotion <- raw_data$Emotion[train_indices]
   test_emotion <- raw_data$Emotion[-train_indices]
 
-  return(list(train_set = train_commentaire, train_emotion = train_emotion, test_set = test_commentaire, test_emotion = test_emotion))
+  return(list(train_commentaire = train_commentaire, train_emotion = train_emotion, test_commentaire = test_commentaire, test_emotion = test_emotion))
 }
 
-custom_dataset <- test_train_split(corpus_tfidf_df, dataset)
-train_commentaire <- custom_dataset[1]
-train_emotion <- custom_dataset[2]
-test_commentaire <- custom_dataset[3]
-test_emotion <- custom_dataset[4]
+dataset_vec <- test_train_split(corpus_tfidf_df, dataset)
 ```
 ```{r}
-# model <- naiveBayes(train_commentaire, train_emotion)
-model <- naiveBayes(as.matrix(train_commentaire), train_emotion)
-predictions <- predict(model, as.matrix(test_commentaire))
+model <- naiveBayes(dataset_vec$train_commentaire, dataset_vec$train_emotion)
+# model <- naiveBayes(as.matrix(), train_emotion)
+# predictions <- predict(model, as.matrix(test_commentaire))
+```
+```{r}
+predictions <- predict(model, dataset_vec$test_commentaire)
 ```
 ---
 
 ```{r}
-cm <- confusionMatrix(predictions, as.factor(test_emotion))
+cm <- confusionMatrix(predictions, as.factor(dataset_vec$test_emotion))
 
-# Extract the accuracy, precision, recall, and F1-score
-# accuracy <- cm$overall['Accuracy']
-# precision <- cm$byClass['Pos Pred Value']
-# recall <- cm$byClass['Sensitivity']
-# F1 <- 2 * (precision * recall) / (precision + recall)
 
-# # Print the results
-# print(paste("Accuracy: ", accuracy))
-# print(paste("Precision: ", precision))
-# print(paste("Recall: ", recall))
-# print(paste("F1 Score: ", F1))
+# Print the results
+print(paste("Accuracy: ", cm$overall['Accuracy']))
+print(paste("Precision: ", cm$byClass[,'Precision']))
+print(paste("Recall: ", cm$byClass[,'Recall']))
+print(paste("F1 Score: ", cm$byClass[,'F1']))
 
-print(cm)
+# print(cm)
+```
+---
+# Personal test :
+Here we can test our model with our own sentences :
+
+```{r}
+predic_test <- function(model, comment, corpus_tfidf_df, clean_text_func, vec_string_methode) {
+  # Clean the comment
+  comment_clean <- clean_text_func(comment)
+
+  # Stem the comment
+  comment_stem <- vec_string_methode(comment_clean)
+
+  # Convert the comment to a corpus
+  comment_corpus <- Corpus(VectorSource(comment_stem))
+
+  # Create a Document-Term Matrix for the comment
+  dtm_comment <- DocumentTermMatrix(comment_corpus, control = list(dictionary = Terms(corpus_tfidf_df)))
+
+  # Convert the DTM to a data frame
+  comment_tfidf <- as.data.frame(as.matrix(dtm_comment))
+
+  # Predict the emotion
+  predictions <- predict(model, comment_tfidf)
+
+  return(predictions)
+}
+
+# Call the function
 ```
 
 ```{r}
-# pred <- predict(model, data.frame(Comment = "No ! It's false, he'd make shit"))
-# pred <- predict(model, data.frame(Comment = "Yes it is lovely"))
-pred <- predict(model, data.frame(Comment = "I am not sure about that, I think it is dangerous"))
-pred
+# example :
+Comment <- "Yes it is lovely"
+# Comment <- "I am not sure about that, I think it is dangerous"
+# Comment <- "No ! It's false, he'd make shit"
+```
+On fait maintenant une prediction avec un des commentaires ci-dessus :
+```{r}
+predic_commentaire <- predic_test(model = model, comment = Comment, corpus_tfidf_df = corpus_tfidf_df, clean_text_func = clean_text, vec_string_methode = stem_strings)
 ```
