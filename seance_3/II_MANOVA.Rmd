@@ -346,7 +346,7 @@ G_mat <- matrix(G, nrow = nrow(X_mat), ncol = ncol(X_mat), byrow = TRUE)
 dif <- X_mat - G_mat
 SS_TOT <- t(dif) %*% dif
 
-View(SS_TOT)
+# view(SS_TOT)
 dim(SS_TOT)
 ```
 

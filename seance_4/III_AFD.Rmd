@@ -77,19 +77,67 @@ library(readr)
 
 ```{r, echo = T, warning=F, message=F}
 # à compléter
-VIN_QUALITE <- read.table(file = "VIN_QUALITE.txt", header = TRUE)
+VIN_QUALITE <- read.table(file = "./seance_4/VIN_QUALITE.txt", header = TRUE)
 head(VIN_QUALITE)
 ```
 
 ```{r}
 # à compléter
+MANOVA_CUSTOM <- function (X, Y){
+  # transformation de var
+  X <- as.matrix(X)
+  Y <- as.factor(Y)
 
+  # init de var
+  N <- nrow(X)
+  P <- ncol(X)
+  XK <- split(X, Y)
+  NK <- sapply(XK, nrow)
+  var <- split(X, Y)
+
+  # Correction de la création de la matrice GK
+  GK <- sapply(var, function(group) colMeans(as.matrix(group), na.rm = TRUE))
+
+  G <- colMeans(X)
+
+  # SS_TOT
+  G_mat <- matrix(G, nrow = N, ncol = P, byrow = TRUE)
+  dif <- X - G_mat
+  SS_TOT <- t(dif) %*% dif
+
+  # SS_Intra
+  dif_list <- lapply(XK, function(group) {
+    group_mat <- as.matrix(group)
+    group_mean <- colMeans(group_mat)
+    group_dif <- group_mat - matrix(group_mean, nrow = nrow(group_mat), ncol = ncol(group_mat), byrow = TRUE)
+    return(group_dif)
+  })
+
+  SS_partiel_Intra <- lapply(dif_list, function(dif) {
+    SS <- t(dif) %*% dif
+    return(SS)
+  })
+
+  SS_Intra <- Reduce("+", SS_partiel_Intra)
+
+  # SS_Inter
+  SS_Inter <- SS_TOT - SS_Intra
+
+  # Lambda
+  lambda <- det(SS_Intra) / det(SS_Inter + SS_Intra)
+
+  # Output
+  Output <- list("SS_Tot" = SS_TOT , "SS_Intra" = SS_Intra, "SS_Inter" = SS_Inter, "GK" = GK, "G" = G, "NK" = NK, "P" = P, "N" = N, "Lambda" = lambda)
+  return(Output)
+}
 ```
 
 ```{r}
-
 # à compléter
+X <- VIN_QUALITE[,1:4]
+Y <- VIN_QUALITE$Qualite
 
+result <- MANOVA_CUSTOM(X, Y)
 ```
 
 Les résultats sont les suivants:
