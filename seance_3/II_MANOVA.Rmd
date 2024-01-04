@@ -140,6 +140,7 @@ library(kableExtra)   # chargement du paquet
 library(tidyverse)
 library(dplyr)
 library(readr)
+# library(sourcetools)
 ```
 
 - **Première étape :**
@@ -153,7 +154,7 @@ library(readr)
 
 ```{r}
 # df_MANOVA <- read("./MANOVA_DATAS ET.Rda")
-# load("./seance_3/MANOVA_DATASET.Rda")
+load("./seance_3/MANOVA_DATASET.Rda")
 ```
 
 -   **Troisième étape :**
@@ -229,8 +230,8 @@ des identifiants (utilisation des fonctions *which* et *sapply*)
 
 ```{r P}
 # à compléter
-num_col <- which(sapply(MANOVA_DATASET, is.numeric))
-P <- length(num_col)
+numeric_col <- which(sapply(MANOVA_DATASET, is.numeric))
+P <- length(numeric_col)
 ```
 
 <br>
@@ -247,7 +248,8 @@ X <- data[-6]
 -   **Variable catégorielle sous forme d'un vecteur *Y***
 
 ```{r Y}
-Y <- data[6]
+Y <- as.vector(data[6])
+is.vector(Y)
 ```
 
 <br>
@@ -261,7 +263,7 @@ K <- length(unique(data$Class))
 <br>
 
 -   **Liste *XK* dont chaque élément contient les individus de chaque
-    groupes**
+    groupe**
 
 Pour y parvenir, nous pouvons utiliser la fonction *split*. Les éléments
 sont les suivants :
@@ -289,7 +291,7 @@ print(NK)
 ```{r GK}
 # à compléter
 # Diviser les données en groupes basés sur la colonne "Class"
-var <- split(data[-6], data$Class)
+var <- split(X, data$Class)
 
 # Calculer la moyenne pour chaque groupe
 GK <- sapply(var, function(group) colMeans(group, na.rm = TRUE))
@@ -304,8 +306,10 @@ print(GK)
     groupe) de chaque variable**
 
 ```{r G}
-G <- sapply(data[-6], mean)
-View(G)
+G <- sapply(X, mean)
+print(G)
+# is.vector(G)
+# is.numeric(G)
 ```
 
 <br>
@@ -333,35 +337,17 @@ Pour y parvenir nous devons :
 3.  Calculer la différence
 4.  Effectuer la multiplication avec transposition du premier élément
 
-Au finale, la matrice (*SS_tot*) est la suivante :
-
-```{r I_Tot}
-# à compléter
-X <- t(as.matrix(X))
-G <- matrix(G)
-Gk <- matrix(GK)
-
-View(G)
-View(X)
-View(GK)
-
-G.mat <- matrix(G,nrow = 5,ncol = N)
-
-dif <- X-G.mat
-
-SS_TOT<- t(dif) %*% (dif)
-print(SS_TOT)
-
-dim(SS_TOT)   # 26 * 26
-```
+Au final, la matrice (*SS_tot*) est la suivante :
 
 ```{r}
-# X <- as.matrix(X)
-# G_matrix <- matrix(G, nrow = nrow(X), ncol = ncol(X), byrow = TRUE)
-#
-# diff <- X - G_matrix
-#
-# SS_tot <- diff_transpose %*% diff_matrix
+# Convert the dataframe to a matrix
+X_mat <- as.matrix(X)
+G_mat <- matrix(G, nrow = nrow(X_mat), ncol = ncol(X_mat), byrow = TRUE)
+dif <- X_mat - G_mat
+SS_TOT <- t(dif) %*% dif
+
+View(SS_TOT)
+dim(SS_TOT)
 ```
 
 #### <FONT color='#0066CC'><FONT size = 4> 4.2 Inertie intra classe </FONT></FONT>
@@ -378,24 +364,24 @@ Les résultats sont les suivants:
 
 ```{r}
 # à compléter
-# Diviser les données en groupes basés sur la colonne "Class"
-# groups <- split(data[-6], data$Class)
-#
-# # Calculer la matrice des différences pour chaque groupe
-# dif_list <- lapply(groups, function(group) {
-#   group_mat <- as.matrix(group)
-#   group_mean <- colMeans(group_mat)
-#   group_dif <- group_mat - matrix(group_mean, nrow = nrow(group_mat), ncol = ncol(group_mat), byrow = TRUE)
-#   return(group_dif)
-# })
-#
-# # Calculer la somme des carrés des différences pour chaque groupe
-# SS_partiel_Intra <- lapply(dif_list, function(dif) {
-#   SS <- sum(dif^2)
-#   return(SS)
-# })
-#
-# SS_partiel_Intra
+# Divide the data into groups based on the "Class" column
+
+
+# Calculate the matrix of differences for each group
+dif_list <- lapply(XK, function(group) {
+  group_mat <- as.matrix(group)
+  group_mean <- colMeans(group_mat)
+  group_dif <- group_mat - matrix(group_mean, nrow = nrow(group_mat), ncol = ncol(group_mat), byrow = TRUE)
+  return(group_dif)
+})
+
+# Calculate the sum of squares of the differences for each group
+SS_partiel_Intra <- lapply(dif_list, function(dif) {
+  SS <- t(dif) %*% dif
+  return(SS)
+})
+
+# GitCopilot
 ```
 
 <br>
@@ -407,8 +393,8 @@ $$S{S_{{\text{intra }}}} = \sum\limits_{j = 1}^k {\sum\limits_{i = 1}^{{n_k}} {{
 
 ```{r SS_Intra}
 # à compléter
-# SS_Intra <- colSums(SS_partiel_Intra)
-# head(SS_Intra)
+SS_Intra <- Reduce("+", SS_partiel_Intra)
+print(SS_Intra)
 ```
 
 #### <FONT color='#0066CC'><FONT size = 4> 4.3 Inertie inter classe </FONT></FONT>
@@ -419,8 +405,8 @@ $$S{S_{{\text{inter}}}} = S{S_{tot}} - S{S_{{\text{intra}}}}$$
 
 ```{r SS_inter}
 # à compléter
-# SS_Inter <- SS_partiel_Intra - SS_Intra
-# print(SS_Inter)
+SS_Inter <- SS_TOT - SS_Intra
+print(SS_Inter)
 ```
 
 <br>
@@ -435,7 +421,8 @@ $$\Lambda  = \frac{{\left| {{I_W}} \right|}}{{\left| {{I_B} + {I_W}} \right|}} =
 
 ```{r, lam}
 # à compléter
-
+lambda <- (det(SS_Intra))/(det(SS_Inter + SS_Intra))
+print(lambda)
 ```
 
 #### <FONT color='#0066CC'><FONT size = 4> 5.2 Correction </FONT></FONT>
@@ -444,6 +431,8 @@ $$ - \left( {n - 1 - \frac{{P + K}}{2}} \right)\ln (\Lambda )$$
 
 ```{r}
 # à compléter
+correction <- -(N-1-(P+K)/2)*log(lambda)
+print(correction)
 ```
 
 #### <FONT color='#0066CC'><FONT size = 4> 5.3 Conclusions </FONT></FONT>
@@ -454,6 +443,8 @@ $$ - \left( {n - 1 - \frac{{P + K}}{2}} \right)\ln (\Lambda )$$
 
 ```{r}
 # à compléter
+critique <- qchisq(p = 0.05, P*(K-1))
+print(critique)
 ```
 
 La valeur critique est très inférieure à la valeur corrigée. En
@@ -475,6 +466,8 @@ Nous comparons maintenant les résultats avec la fonction manova\* de R
 
 ```{r, echo = T}
 # à compléter
+model <- manova( as.matrix(X) ~ Y$Class )
+summary(model, test = 'Wilks')
 ```
 
 -   Comme on peut le constater, on retrouve bien la valeur corrigée
@@ -502,18 +495,69 @@ dans R Cette fonction nous servira au prochain TD lorsque nous
 réaliserons une analyse factorielle discriminante
 
 ```{r}
-# à compléter
+MANOVA_CUSTOM <- function (X, Y){
+  # transformation de var
+  X <- as.matrix(X)
+  Y <- as.factor(Y)
 
+  # init de var
+  N <- nrow(X)
+  P <- ncol(X)
+  XK <- split(X, Y)
+  NK <- sapply(XK, nrow)
+  var <- split(X, Y)
+
+  # Correction de la création de la matrice GK
+  GK <- sapply(var, function(group) colMeans(as.matrix(group), na.rm = TRUE))
+
+  G <- colMeans(X)
+
+  # SS_TOT
+  G_mat <- matrix(G, nrow = N, ncol = P, byrow = TRUE)
+  dif <- X - G_mat
+  SS_TOT <- t(dif) %*% dif
+
+  # SS_Intra
+  dif_list <- lapply(XK, function(group) {
+    group_mat <- as.matrix(group)
+    group_mean <- colMeans(group_mat)
+    group_dif <- group_mat - matrix(group_mean, nrow = nrow(group_mat), ncol = ncol(group_mat), byrow = TRUE)
+    return(group_dif)
+  })
+
+  SS_partiel_Intra <- lapply(dif_list, function(dif) {
+    SS <- t(dif) %*% dif
+    return(SS)
+  })
+
+  SS_Intra <- Reduce("+", SS_partiel_Intra)
+
+  # SS_Inter
+  SS_Inter <- SS_TOT - SS_Intra
+
+  # Lambda
+  lambda <- det(SS_Intra) / det(SS_Inter + SS_Intra)
+
+  # Output
+  Output <- list("SS_Tot" = SS_TOT , "SS_Intra" = SS_Intra, "SS_Inter" = SS_Inter, "GK" = GK, "G" = G, "NK" = NK, "P" = P, "N" = N, "Lambda" = lambda)
+  return(Output)
+}
 ```
 
-Le jeux de données est le suivant
+Le jeu de données est le suivant
 
 ```{r}
 # à compléter
+data(iris)
+
+X <- iris[, 1:4]
+Y <- iris$Species
+result <- MANOVA_CUSTOM(X, Y)
 ```
 
 ```{r, echo = T}
 # à compléter
+print(result)
 ```
 
 <br>
@@ -523,4 +567,9 @@ lambda... Une fois de plus, vous avez bien travaillé !
 
 ```{r, echo = T}
 # à compléter
+model <- manova(as.matrix(X)~Y)
+summary(model,test= 'Wilks')
 ```
+
+
+https://rpubs.com/learstudio/988960
