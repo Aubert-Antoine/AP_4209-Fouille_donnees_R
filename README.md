@@ -7,5 +7,16 @@
 
 
 > [!NOTE]  
-> - Manova ok 
-> Pour Projet 1 : le prb vient probablement du TFTD car certain mot sont vectorized en 0. 
+> - [x] rappels 
+> - [x] Bayesian
+> - [x] Manova
+> - [ ] afd
+> - [X] Projet 1 : un bug
+> - [ ] Projet 2
+> - [ ] Projet 3
+> - [ ] Projet Final
+
+> [!TIP]
+> [TP1 bayésien](https://rpubs.com/learstudio/988959) 
+> [TP2 manova](https://rpubs.com/learstudio/988960)
+> [Classification de text avec bayes](https://rpubs.com/drshah96/629986)

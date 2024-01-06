@@ -1,0 +1,204 @@
+ ---
+title: "<FONT color='#0066CC'><FONT size = 4 ><DIV align= center> mini projet 1 AP-4209 </DIV></FONT></FONT>"
+author: "<FONT color='#FFFFFFF'><FONT size = 4 ><DIV align= center> auteurs : Brieuc Valence et Alexandre Macchi </DIV></FONT></FONT>"
+
+output:
+  html_document:
+    highlight: textmate
+    theme: readable
+    toc: yes
+    toc_depth: 6
+    toc_float: yes
+
+---
+
+```{=html}
+<style type="text/css">
+body, td {font-size: 17px;}
+code.r{font-size: 5px;}
+
+pre { font-size: 15px;}
+</style>
+```
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r}
+rm(list = ls())
+library(lattice)
+library(ggplot2)
+library(kableExtra)
+library(stringr)
+library(tokenizers)
+library(tm)
+library(textstem)
+library(e1071)
+library(caret)
+library(tidytext)
+library(dplyr)
+```
+
+```{r}
+df <- read.csv("./Projet1/Emotion_classify_Data.csv")
+```
+
+```{r}
+summary(df)
+```
+
+```{r}
+#df %>% kbl(digits=3) %>%
+#       kable_styling(bootstrap_options = "striped", full_width =  F, position = "center", latex_options = 'stripped') %>%
+#       scroll_box(height = "250px")
+```
+
+```{r}
+n <- nrow(df)
+n
+```
+
+```{r}
+p <- ncol(df)
+p
+```
+
+```{r}
+emotion <- unique(df$Emotion)
+emotion
+```
+
+```{r}
+df_joie <- df[df$Emotion == 'joy', ]
+summary(df_joie)
+```
+
+```{r}
+df_peur <- df[df$Emotion == 'fear', ]
+summary(df_peur)
+```
+
+```{r}
+df_colere <- df[df$Emotion == 'anger', ]
+summary(df_colere)
+```
+
+```{r}
+clean_text <- function(text) {
+  # tokenisation : on divise le texte en token 
+  words <- unlist(tokenize_words(text))
+  
+  # Lemmatisation : on rend les mots sous leur forme lemme, du dictionnaire
+  words <- lemmatize_words(words)
+
+  # Stemming : on rend les mots sous leur racine, sans préfixe ni suffixe
+  words <- stem_words(words)
+  
+  # on enleve les caractères spéciaux et les chiffres
+  clean_words <- str_replace_all(words, "[^a-zA-Z0-9]", "")
+
+  # on remet des espaces pour rendre la phrase correcte
+  clean_text <- paste(clean_words, collapse = ' ')
+  return(clean_text)
+}
+df$Cleantext <- sapply(df$Comment, clean_text)
+```
+
+```{r}
+df %>% kbl(digits=3) %>%
+  kable_styling(bootstrap_options = "striped", full_width =  F, position = "center", latex_options = 'stripped') %>%
+  scroll_box(height = "250px")
+```
+
+```{r}
+df$Emotion <- factor(df$Emotion)
+```
+
+```{r}
+# corpus <- Corpus(VectorSource(df$Cleantext))
+# dtm_tfidf <- DocumentTermMatrix(corpus, control = list(weighting = function(x) weightTfIdf(x, normalize = FALSE)))
+# df_tfidf <- as.data.frame(as.matrix(dtm_tfidf))
+df <- df %>% mutate(n = 1)
+
+# Créer un dataframe TF-IDF
+df_tfidf <- df %>%
+  count(Emotion, Cleantext, wt = n) %>%
+  bind_tf_idf(Cleantext, Emotion, n)
+head(df_tfidf)
+
+# # Créer un corpus
+# corpus <- Corpus(VectorSource(df$Cleantext))
+
+# # Appliquer le stemming
+# corpus <- tm_map(corpus, content_transformer(stemDocument))
+
+# # Créer la matrice terme-document avec la fréquence des termes (Term Frequency)
+# dtm <- DocumentTermMatrix(corpus)
+
+# # Ou pour utiliser TF-IDF
+# tfidf <- weightTfIdf(dtm)
+
+# # Convertir en un data frame
+# df_tfidf <- as.data.frame(as.matrix(tfidf))
+# df_tfidf$Emotion <- factor(df$Emotion)
+```
+
+```{r}
+set.seed(123)
+train_index <- sample(nrow(df_tfidf), 0.7 * nrow(df_tfidf))
+train_data <- df_tfidf[train_index, ]
+test_data <- df_tfidf[-train_index, ]
+```
+
+```{r}
+model <- naiveBayes(Emotion ~ ., data = train_data)
+predictions <- predict(model, newdata = test_data)
+accuracy <- sum(predictions == test_data$Emotion) / nrow(test_data)
+accuracy
+```
+
+```{r}
+confusion_matrix <- confusionMatrix(predictions, test_data$Emotion)
+confusion_matrix
+```
+
+```{r}
+accuracy <- confusion_matrix$overall["Accuracy"]
+precision <- confusion_matrix$byClass[, 'Precision']
+recall <- confusion_matrix$byClass[, 'Recall']
+f1_score <- confusion_matrix$byClass[, 'F1']
+cat("Accuracy:", accuracy, "\n")
+cat("Precision:", precision, "\n")
+cat("Recall:", recall, "\n")
+cat("F1-score:", f1_score, "\n")
+```
+
+```{r}
+# num_folds <- 5
+# ctrl <- trainControl(method = "cv", number = num_folds)
+# preprocess_method <- "center"
+# smaller_model <- train(x = train_data,
+#                        y = train_data$Emotion,
+#                        method = "naive_bayes",
+#                        trControl = ctrl,
+#                        preProcess = preprocess_method)
+# smaller_model
+```
+```{r}
+# predictions <- predict(smaller_model, newdata = test_data)
+# confusion_matrix2 <- confusionMatrix(predictions, test_data$Emotion)
+```
+```{r}
+# accuracy <- confusion_matrix2$overall["Accuracy"]
+# precision <- confusion_matrix2$byClass[, 'Precision']
+# recall <- confusion_matrix2$byClass[, 'Recall']
+# f1_score <- confusion_matrix2$byClass[, 'F1']
+# cat("Accuracy:", accuracy, "\n")
+# cat("Precision:", precision, "\n")
+# cat("Recall:", recall, "\n")
+# cat("F1-score:", f1_score, "\n")
+```
