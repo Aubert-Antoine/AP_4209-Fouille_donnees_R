@@ -1,0 +1,105 @@
+---
+title: "R Notebook"
+output: html_document
+---
+```{r}
+rm(list = ls())       # initialisation
+library(kableExtra)   # chargement du paquet
+library(tidyverse)
+library(dplyr)
+library(readr)
+MANOVA_DATASET <- read_csv("./seance_3_manova/MANOVA_DATASET.csv")
+MANOVA_DATASET$Site <- as.factor(MANOVA_DATASET$Site)
+col <- names(MANOVA_DATASET[2:6])
+colnames(MANOVA_DATASET) <- c("Class", col)
+MANOVA_DATASET$Class <- substr(as.character(MANOVA_DATASET$Class), 1, 2)
+data <- MANOVA_DATASET[,c(2,3,4,5,6,1)]
+```
+
+```{r}
+N <- nrow(data)
+P <- ncol(data)
+X <- as.matrix(data[-6])
+Y <- as.vector(data[6])
+K <- length(unique(data$Class))
+XK <- split(data[-6], data$Class)
+NK <- sapply(XK, nrow)
+GK <- sapply(XK, function(group) colMeans(group, na.rm = TRUE))
+G <- colMeans(X)
+```
+```{r}
+G_reshaped <- matrix(G, nrow = nrow(X), ncol = ncol(X), byrow = TRUE)
+tmp_dif <- X - G_reshaped
+SS_TOT <- t(tmp_dif) %*% tmp_dif
+```
+```{r}
+SS_partiel <- function (matrix) {
+  group_mean <- colMeans(matrix)
+  matrix_mean <- matrix(group_mean, nrow = nrow(matrix), ncol = ncol(matrix), byrow = TRUE)
+  group_dif <- as.matrix(matrix - matrix_mean)
+  SS <- t(group_dif) %*% group_dif
+  return(SS)
+}
+
+SS_partiel_Intra  <- lapply(XK, SS_partiel)
+SS_Intra <- Reduce("+", SS_partiel_Intra)
+print(SS_Intra)
+```
+```{r SS_inter}
+# à compléter
+SS_Inter <- SS_TOT - SS_Intra
+print(SS_Inter)
+```
+
+```{r}
+lambda <- (det(SS_Intra))/(det(SS_Inter + SS_Intra))
+correction <- -(N-1-(P+K)/2)*log(lambda)
+critique <- qchisq(p = 0.05, P*(K-1))
+model <- manova( as.matrix(X) ~ Y$Class )
+```
+
+
+<h1> heho </>
+
+```{r}
+data(iris)
+X_iris <- iris[, 1:4]
+Y_iris <- iris$Species
+
+# result <- MANOVA_CUSTOM(X_iris, Y_iris)
+```
+```{r}
+N.MANOVA_CUSTOM <- nrow(X_iris)
+P.MANOVA_CUSTOM <- ncol(X_iris)
+X.MANOVA_CUSTOM <- as.matrix(X_iris)
+Y.MANOVA_CUSTOM <- as.vector(X_iris)
+K.MANOVA_CUSTOM <- length(unique(Y_iris))
+XK.MANOVA_CUSTOM <- split(X_iris, Y_iris)
+NK.MANOVA_CUSTOM <- sapply(XK.MANOVA_CUSTOM, nrow)
+GK.MANOVA_CUSTOM <- sapply(XK.MANOVA_CUSTOM, function(group) colMeans(group, na.rm = TRUE))
+G.MANOVA_CUSTOM <- colMeans(X_iris)
+
+G_reshaped.MANOVA_CUSTOM <- matrix(G.MANOVA_CUSTOM, nrow = nrow(X.MANOVA_CUSTOM), ncol = ncol(X.MANOVA_CUSTOM), byrow = TRUE)
+tmp_dif.MANOVA_CUSTOM <- X.MANOVA_CUSTOM - G_reshaped.MANOVA_CUSTOM
+SS_TOT.MANOVA_CUSTOM <- t(tmp_dif.MANOVA_CUSTOM) %*% tmp_dif.MANOVA_CUSTOM
+
+SS_partiel <- function (matrix) {
+  group_mean <- colMeans(matrix)
+  matrix_mean <- matrix(group_mean, nrow = nrow(matrix), ncol = ncol(matrix), byrow = TRUE)
+  group_dif <- as.matrix(matrix - matrix_mean)
+  SS <- t(group_dif) %*% group_dif
+  return(SS)
+}
+
+SS_partiel_Intra.MANOVA_CUSTOM  <- lapply(XK.MANOVA_CUSTOM, SS_partiel)
+SS_Intra.MANOVA_CUSTOM <- Reduce("+", SS_partiel_Intra.MANOVA_CUSTOM)
+
+SS_Inter.MANOVA_CUSTOM <- SS_TOT.MANOVA_CUSTOM - SS_Intra.MANOVA_CUSTOM
+
+lambda.MANOVA_CUSTOM <- (det(SS_Intra.MANOVA_CUSTOM))/(det(SS_Inter.MANOVA_CUSTOM + SS_Intra.MANOVA_CUSTOM))
+correction.MANOVA_CUSTOM <- -(N.MANOVA_CUSTOM-1-(P.MANOVA_CUSTOM+K.MANOVA_CUSTOM)/2)*log(lambda.MANOVA_CUSTOM)
+critique.MANOVA_CUSTOM <- qchisq(p = 0.05, P.MANOVA_CUSTOM*(K.MANOVA_CUSTOM-1))
+
+# Output <- list("SS_Tot.MANOVA_CUSTOM" = SS_TOT.MANOVA_CUSTOM , "SS_Intra.MANOVA_CUSTOM" = SS_partiel_Intra.MANOVA_CUSTOM, "SS_Inter.MANOVA_CUSTOM" = SS_Inter.MANOVA_CUSTOM, "GK.MANOVA_CUSTOM" = GK.MANOVA_CUSTOM, "G.MANOVA_CUSTOM" = G.MANOVA_CUSTOM, "NK.MANOVA_CUSTOM" = NK.MANOVA_CUSTOM, "P.MANOVA_CUSTOM" = P.MANOVA_CUSTOM, "N.MANOVA_CUSTOM" = N.MANOVA_CUSTOM, "Lambda.MANOVA_CUSTOM" = lambda.MANOVA_CUSTOM)
+# return(Output)
+```

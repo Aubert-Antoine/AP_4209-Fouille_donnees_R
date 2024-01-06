@@ -190,13 +190,6 @@ colnames(MANOVA_DATASET) <- c("Class", col)
 names(MANOVA_DATASET)
 ```
 
-```{r,echo = T,  warning = F}
-col <- names(MANOVA_DATASET[2:6])
-colnames(MANOVA_DATASET) <- c("Class", col)
-
-names(MANOVA_DATASET)
-```
-
 -   **Septième étape :**
 
 ```{r,   warning = F}
@@ -217,6 +210,7 @@ ELT (Extract-Load-Transform) :
 
 ```{r N}
 N <- nrow(data)
+N
 ```
 
 <br>
@@ -270,7 +264,7 @@ sont les suivants :
 
 ```{r Xk_1 }
 # à compléter
-XK <- split(data, data$Class)
+XK <- split(data[-6], data$Class)
 head(XK)
 ```
 
@@ -291,11 +285,9 @@ print(NK)
 ```{r GK}
 # à compléter
 # Diviser les données en groupes basés sur la colonne "Class"
-var <- split(X, data$Class)
-
 # Calculer la moyenne pour chaque groupe
-GK <- sapply(var, function(group) colMeans(group, na.rm = TRUE))
-GK <- as.data.frame(GK)
+GK <- sapply(XK, function(group) colMeans(group, na.rm = TRUE))
+# GK <- as.data.frame(GK)
 # Afficher les moyennes pour chaque groupe
 print(GK)
 ```
@@ -347,7 +339,7 @@ dif <- X_mat - G_mat
 SS_TOT <- t(dif) %*% dif
 
 # view(SS_TOT)
-dim(SS_TOT)
+# dim(SS_TOT)
 ```
 
 #### <FONT color='#0066CC'><FONT size = 4> 4.2 Inertie intra classe </FONT></FONT>
@@ -366,9 +358,9 @@ Les résultats sont les suivants :
 # à compléter
 
 SS_partiel <- function (matrix) {
-  group_mean <- colMeans(matrix[-6])
-  matrix_mean <- matrix(group_mean, nrow = nrow(matrix[-6]), ncol = ncol(matrix[-6]), byrow = TRUE)
-  group_dif <- as.matrix(matrix[-6] - matrix_mean)
+  group_mean <- colMeans(matrix)
+  matrix_mean <- matrix(group_mean, nrow = nrow(matrix), ncol = ncol(matrix), byrow = TRUE)
+  group_dif <- as.matrix(matrix - matrix_mean)
   SS <- t(group_dif) %*% group_dif
   return(SS)
 }
@@ -489,8 +481,8 @@ réaliserons une analyse factorielle discriminante
 ```{r}
 MANOVA_CUSTOM <- function (X, Y){
   # transformation de var
-  X <- as.matrix(X)
-  Y <- as.factor(Y)
+  # X <- as.matrix(X)
+  Y <- as.vector(Y)
 
   # init de var
   N <- nrow(X)

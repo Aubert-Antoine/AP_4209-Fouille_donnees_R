@@ -13,11 +13,7 @@ MANOVA_CUSTOM <- function (X, Y){
   P <- ncol(X)
   XK <- split(X, Y)
   NK <- sapply(XK, nrow)
-  var <- split(X, Y)
-
-  # Correction de la création de la matrice GK
-  GK <- sapply(var, function(group) colMeans(as.matrix(group), na.rm = TRUE))
-
+  GK <- sapply(XK, function(group) colMeans(as.matrix(group), na.rm = TRUE))
   G <- colMeans(X)
 
   # SS_TOT
