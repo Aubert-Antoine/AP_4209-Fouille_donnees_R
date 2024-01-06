@@ -146,7 +146,7 @@ library(readr)
 - **Première étape :**
 
 ```{r}
-# MANOVA_DATASET <- read_csv("./seance_3/MANOVA_DATASET.csv")
+# MANOVA_DATASET <- read_csv("./seance_3_manova/MANOVA_DATASET.csv")
 # save(MANOVA_DATASET, file = "MANOVA_DATASET.Rda") # ?
 ```
 
