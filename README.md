@@ -1,4 +1,4 @@
-# AP_4209-Fouille_donn-es_R
+# AP_4209-Fouille de données_R
 
 > [!IMPORTANT]  
 > Pour l'instant (60/01/24) uniquement Projet 1 et S1, S2, S3 sont fait, mais ne marche pas lol. 
