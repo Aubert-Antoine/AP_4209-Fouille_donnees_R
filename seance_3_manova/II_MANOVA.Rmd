@@ -146,7 +146,7 @@ library(readr)
 - **Première étape :**
 
 ```{r}
-# MANOVA_DATASET <- read_csv("./seance_3_manova/MANOVA_DATASET.csv")
+MANOVA_DATASET <- read_csv("./seance_3_manova/MANOVA_DATASET.csv")
 # save(MANOVA_DATASET, file = "MANOVA_DATASET.Rda") # ?
 ```
 
@@ -154,7 +154,7 @@ library(readr)
 
 ```{r}
 # df_MANOVA <- read("./MANOVA_DATAS ET.Rda")
-load("./seance_3/MANOVA_DATASET.Rda")
+# load("./seance_3/MANOVA_DATASET.Rda")
 ```
 
 -   **Troisième étape :**
@@ -162,8 +162,8 @@ load("./seance_3/MANOVA_DATASET.Rda")
 Les données sont les suivantes :
 
 ```{r,echo = T,  warning = F}
-MANOVA_DATASET %>% kbl(digits=3) %>%
-  kable_material_dark(bootstrap_options = "striped", full_width = T, position = "center", latex_options = 'stripped')
+# MANOVA_DATASET %>% kbl(digits=3) %>%
+#   kable_material_dark(bootstrap_options = "striped", full_width = T, position = "center", latex_options = 'stripped')
 ```
 
 -   **Quatrième étape :**
@@ -360,28 +360,20 @@ dans une liste (*SS_partiel_Intra*).
 Pour chaque classe, nous calculons la SS intra (partielle) :
 $$S{S_{{\text{k}}{\text{, intra}}}} = \sum\limits_{i = 1}^{{n_k}} {{d^2}({x_{i,j}},{g_j})}  = {({X_{ik}} - {G_k})^t} \times ({X_{ik}} - {G_k})$$
 
-Les résultats sont les suivants:
+Les résultats sont les suivants :
 
 ```{r}
 # à compléter
-# Divide the data into groups based on the "Class" column
 
-
-# Calculate the matrix of differences for each group
-dif_list <- lapply(XK, function(group) {
-  group_mat <- as.matrix(group)
-  group_mean <- colMeans(group_mat)
-  group_dif <- group_mat - matrix(group_mean, nrow = nrow(group_mat), ncol = ncol(group_mat), byrow = TRUE)
-  return(group_dif)
-})
-
-# Calculate the sum of squares of the differences for each group
-SS_partiel_Intra <- lapply(dif_list, function(dif) {
-  SS <- t(dif) %*% dif
+SS_partiel <- function (matrix) {
+  group_mean <- colMeans(matrix[-6])
+  matrix_mean <- matrix(group_mean, nrow = nrow(matrix[-6]), ncol = ncol(matrix[-6]), byrow = TRUE)
+  group_dif <- as.matrix(matrix[-6] - matrix_mean)
+  SS <- t(group_dif) %*% group_dif
   return(SS)
-})
+}
 
-# GitCopilot
+SS_partiel_Intra  <- lapply(XK, SS_partiel)
 ```
 
 <br>
@@ -518,28 +510,27 @@ MANOVA_CUSTOM <- function (X, Y){
   SS_TOT <- t(dif) %*% dif
 
   # SS_Intra
-  dif_list <- lapply(XK, function(group) {
-    group_mat <- as.matrix(group)
-    group_mean <- colMeans(group_mat)
-    group_dif <- group_mat - matrix(group_mean, nrow = nrow(group_mat), ncol = ncol(group_mat), byrow = TRUE)
-    return(group_dif)
-  })
-
-  SS_partiel_Intra <- lapply(dif_list, function(dif) {
-    SS <- t(dif) %*% dif
+  SS_partiel <- function (matrix) {
+    group_mean <- colMeans(matrix)
+    matrix_mean <- matrix(group_mean, nrow = nrow(matrix), ncol = ncol(matrix), byrow = TRUE)
+    group_dif <- as.matrix(matrix - matrix_mean)
+    SS <- t(group_dif) %*% group_dif
     return(SS)
-  })
+  }
 
-  SS_Intra <- Reduce("+", SS_partiel_Intra)
+  # SS_partiel_Intra  <- lapply(XK, SS_partiel)
+  SS_partiel_Intra <- SS_partiel(X)
+
+  # SS_Intra <- Reduce("+", SS_partiel_Intra)
 
   # SS_Inter
-  SS_Inter <- SS_TOT - SS_Intra
+  SS_Inter <- SS_TOT - SS_partiel_Intra
 
   # Lambda
-  lambda <- det(SS_Intra) / det(SS_Inter + SS_Intra)
+  # lambda <- det(SS_Intra) / det(SS_Inter + SS_Intra)
 
   # Output
-  Output <- list("SS_Tot" = SS_TOT , "SS_Intra" = SS_Intra, "SS_Inter" = SS_Inter, "GK" = GK, "G" = G, "NK" = NK, "P" = P, "N" = N, "Lambda" = lambda)
+  Output <- list("SS_Tot" = SS_TOT , "SS_Intra" = SS_partiel_Intra, "SS_Inter" = SS_Inter, "GK" = GK, "G" = G, "NK" = NK, "P" = P, "N" = N, "Lambda" = lambda)
   return(Output)
 }
 ```
@@ -573,3 +564,6 @@ summary(model,test= 'Wilks')
 
 
 https://rpubs.com/learstudio/988960
+```{r}
+iris
+```

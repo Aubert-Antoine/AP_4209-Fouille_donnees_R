@@ -1,0 +1,79 @@
+---
+title: "R Notebook"
+output: html_document
+---
+```{r}
+MANOVA_CUSTOM <- function (X, Y){
+  # transformation de var
+  X <- as.matrix(X)
+  Y <- as.factor(Y)
+
+  # init de var
+  N <- nrow(X)
+  P <- ncol(X)
+  XK <- split(X, Y)
+  NK <- sapply(XK, nrow)
+  var <- split(X, Y)
+
+  # Correction de la création de la matrice GK
+  GK <- sapply(var, function(group) colMeans(as.matrix(group), na.rm = TRUE))
+
+  G <- colMeans(X)
+
+  # SS_TOT
+  G_mat <- matrix(G, nrow = N, ncol = P, byrow = TRUE)
+  dif <- X - G_mat
+  SS_TOT <- t(dif) %*% dif
+
+  # SS_Intra
+  SS_partiel <- function (matrix) {
+    group_mean <- colMeans(matrix)
+    matrix_mean <- matrix(group_mean, nrow = nrow(matrix), ncol = ncol(matrix), byrow = TRUE)
+    group_dif <- as.matrix(matrix - matrix_mean)
+    SS <- t(group_dif) %*% group_dif
+    return(SS)
+  }
+
+  # SS_partiel_Intra  <- lapply(XK, SS_partiel)
+  SS_partiel_Intra <- SS_partiel(X)
+
+  # SS_Intra <- Reduce("+", SS_partiel_Intra)
+
+  # SS_Inter
+  SS_Inter <- SS_TOT - SS_partiel_Intra
+
+  # Lambda
+  # lambda <- det(SS_Intra) / det(SS_Inter + SS_Intra)
+
+  # Output
+  Output <- list("SS_Tot" = SS_TOT , "SS_Intra" = SS_partiel_Intra, "SS_Inter" = SS_Inter, "GK" = GK, "G" = G, "NK" = NK, "P" = P, "N" = N, "Lambda" = lambda)
+  return(Output)
+}
+```
+
+Le jeu de données est le suivant
+
+```{r}
+# à compléter
+data(iris)
+
+X <- iris[, 1:4]
+Y <- iris$Species
+result <- MANOVA_CUSTOM(X, Y)
+```
+
+```{r, echo = T}
+# à compléter
+print(result)
+```
+
+<br>
+
+l'utilisation de la fonction *manova* de R conduit à la même valeur du
+lambda... Une fois de plus, vous avez bien travaillé !
+
+```{r, echo = T}
+# à compléter
+model <- manova(as.matrix(X)~Y)
+summary(model,test= 'Wilks')
+```
