@@ -25,17 +25,22 @@ library(caret)
 ```
 
 ---
+```{r}
+# sessionInfo()
+```
 
 ## 1. Chargement et exploration des données :
 
 ```{r}
 dataset_path <- "./Projet1/Emotion_classify_Data.csv"
+dataset <- read.csv(dataset_path, header = TRUE, sep = ",")
+summary(dataset)
 ```
 
 ### Chargez le jeu de données dans R.
 
 ```{r}
-dataset <- read.csv(dataset_path, header = TRUE, sep = ",")
+
 head(dataset, 12) %>% kbl(digits=3) %>%
         kable_material_dark(bootstrap_options = "striped", full_width = F, position = "center", latex_options = 'stripped')
 ```
@@ -66,7 +71,7 @@ Le dataset est donc équilibré et on pourra donc l'utiliser sur différentes m�
 
 1. On regarde la longueur moyenne et la variance des commentaires par classe :
 ```{r}
-dataset %>% group_by(Emotion) %>% summarise(Mean_Char_Length = mean(nchar(Comment)), Var_Char_Length = var(nchar(Comment)))
+dataset %>% group_by(Emotion) %>% summarise(Mean_Char_Length = mean(nchar(Comment)))
 ```
 
 On remarque que la taille est sensiblement la même pour chaque classe. On ne peut donc rien en déduire. De même pour la variance.
@@ -131,8 +136,14 @@ Tokenization :
 
 ```{r}
 corpus <- VCorpus(VectorSource(dataset))
-corpus <-tm_map(corpus,clean_text)
+# corpus <-tm_map(corpus,clean_text)
+corpus <-tm_map(corpus,tolower)
+corpus <-tm_map(corpus,tolower)
+corpus <-tm_map(corpus,removeNumbers)
 corpus <- tm_map(corpus, removeWords, stopwords("english")) # i.e. upper link
+corpus <-tm_map(corpus,removePunctuation)
+corpus <-tm_map(corpus,stripWhitespace)
+corpus$content$Emotion <- factor(corpus$content$Emotion)
 ```
 #### Lemmatisation :
 On va dans un premier temps faire de la lemmatisation. On choisit cette option,
@@ -140,12 +151,17 @@ car on suppose que le contenu provient de twitter et est donc assez polarisé, e
 sans trop de préfixe ou suffixe.
 ```{r}
 # Lemmatize the corpus
-# corpus_vec <- tm_map(corpus, lemmatize_strings)
+corpus_lem <- tm_map(corpus, lemmatize_strings)
 # corpus_vec <- tm_map(corpus, stem_strings)
-corpus_vec <- tm_map(corpus, stem_strings)
+# corpus_vec <- tm_map(corpus, stem_strings)
 
 # Inspect the lemmatized corpus
-head(corpus_vec$content$Comment)
+head(corpus_lem$content$Comment)
+```
+
+```{r}
+library(wordcloud)
+wordcloud(corpus_lem$content$Comment, min.freq = 40, random.order = FALSE)
 ```
 https://www.rdocumentation.org/packages/tm/versions/0.7-11/topics/weightSMART
 
@@ -153,8 +169,9 @@ https://www.rdocumentation.org/packages/tm/versions/0.7-11/topics/weightSMART
 #### Term Frequency-Inverse Document Frequency (TF-IDF) :
 
 https://medium.com/@er.iit.pradeep09/understanding-tf-idf-in-nlp-a-comprehensive-guide-26707db0cec5
-
-
+```{r}
+test_train_split <-
+```
 
 ```{r}
 dtm <- DocumentTermMatrix(corpus_vec$content$Comment)
@@ -163,7 +180,7 @@ dtm <- DocumentTermMatrix(corpus_vec$content$Comment)
 corpus_tfidf <- weightTfIdf(dtm)
 
 # Inspect the result
-inspect(corpus_tfidf)
+inspect(dtm)
 ```
 
 ## Let split our Document

@@ -30,33 +30,20 @@ dataset <- read.csv(dataset_path, header = TRUE, sep = ",")
 ```
 
 ---
-
 ```{r}
-clean_text <- function(text) {
-  text <- iconv(text, "UTF-8", "ASCII", sub = " ") # remove caractères spéciaux
-  text <- gsub('http\\S+\\s*', "", text) # remove URLs
-  text <- gsub('#\\S+', "", text) # remove hashtags
-  text <- gsub("[[:digit:]]", "", text) # remove numbers
-  text <- textclean::replace_contraction(text) # replace contractions
-  text <- gsub(' +', ' ', text) # remove extra whitespaces
-  text <- trimws(text)  # remove leading and trailing spaces
-  text <- text[text != ""] # remove empty strings
-  text <- tolower(text) # to lower case
-  return(text)
-}
-```
-
-```{r}
-create_corpus <- function(dataset, clean_text_func, vec_string_methode) {
+create_corpus <- function(dataset, vec_string_methode) {
   corpus <- VCorpus(VectorSource(dataset))
-  corpus <- tm_map(corpus, clean_text_func)
-  # corpus <- tm_map(corpus, removeWords, stopwords("english"))
-  corpus_vec <- tm_map(corpus, vec_string_methode)
-
-  return(corpus_vec)
+  corpus <-tm_map(corpus,tolower)
+  corpus <-tm_map(corpus,removeNumbers)
+  corpus <- tm_map(corpus, removeWords, stopwords("english")) # i.e. upper link
+  corpus <-tm_map(corpus,removePunctuation)
+  corpus <-tm_map(corpus,stripWhitespace)
+  corpus <- tm_map(corpus, vec_string_methode)
+  return(corpus)
 }
 
-corpus <- create_corpus(dataset, clean_text, stem_strings)
+corpus <- create_corpus(dataset, clean_text, lemmatize_strings)
+corpus$content$Emotion <- factor(corpus$content$Emotion)
 print(corpus$content$Comment[1])
 print(corpus$content$Emotion[1])
 
