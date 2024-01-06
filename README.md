@@ -7,5 +7,5 @@
 
 
 > [!NOTE]  
-> Pour Manova prb de généralisation avec la fonction manova_custom → va être ok ce soir
+> - Manova ok 
 > Pour Projet 1 : le prb vient probablement du TFTD car certain mot sont vectorized en 0. 
