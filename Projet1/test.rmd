@@ -42,7 +42,7 @@ create_corpus <- function(dataset, vec_string_methode) {
   return(corpus)
 }
 
-corpus <- create_corpus(dataset, clean_text, lemmatize_strings)
+corpus <- create_corpus(dataset, lemmatize_strings)
 corpus$content$Emotion <- factor(corpus$content$Emotion)
 print(corpus$content$Comment[1])
 print(corpus$content$Emotion[1])
@@ -68,7 +68,7 @@ corpus_tfidf_df <- create_tfidf(corpus)
 
 
 ```{r}
-test_train_split <- function(tfidf_df, raw_data, rate = 0.7, custom.seed = 123) {
+test_train_split <- function(tfidf_df, raw_data, rate = 0.7, custom.seed = 13) {
   set.seed(custom.seed)
 
   tfidf_df <- as.data.frame(tfidf_df)
@@ -86,9 +86,7 @@ test_train_split <- function(tfidf_df, raw_data, rate = 0.7, custom.seed = 123) 
 dataset_vec <- test_train_split(corpus_tfidf_df, dataset)
 ```
 ```{r}
-model <- naiveBayes(dataset_vec$train_commentaire, dataset_vec$train_emotion)
-# model <- naiveBayes(as.matrix(), train_emotion)
-# predictions <- predict(model, as.matrix(test_commentaire))
+model <- naiveBayes(x=dataset_vec$train_commentaire, y=dataset_vec$train_emotion)
 ```
 ```{r}
 predictions <- predict(model, dataset_vec$test_commentaire)
@@ -100,12 +98,12 @@ cm <- confusionMatrix(predictions, as.factor(dataset_vec$test_emotion))
 
 
 # Print the results
-print(paste("Accuracy: ", cm$overall['Accuracy']))
-print(paste("Precision: ", cm$byClass[,'Precision']))
-print(paste("Recall: ", cm$byClass[,'Recall']))
-print(paste("F1 Score: ", cm$byClass[,'F1']))
-
-# print(cm)
+# print(paste("Accuracy: ", cm$overall['Accuracy']))
+# print(paste("Precision: ", cm$byClass[,'Precision']))
+# print(paste("Recall: ", cm$byClass[,'Recall']))
+# print(paste("F1 Score: ", cm$byClass[,'F1']))
+#
+print(cm)
 ```
 ---
 # Personal test :
@@ -145,5 +143,5 @@ Comment <- "Yes it is lovely"
 ```
 On fait maintenant une prediction avec un des commentaires ci-dessus :
 ```{r}
-predic_commentaire <- predic_test(model = model, comment = Comment, corpus_tfidf_df = corpus_tfidf_df, clean_text_func = clean_text, vec_string_methode = stem_strings)
+predic_commentaire <- predic_test(model = model, comment = Comment, corpus_tfidf_df = corpus_tfidf_df, vec_string_methode = stem_strings)
 ```
